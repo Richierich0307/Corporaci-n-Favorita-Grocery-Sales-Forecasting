@@ -1,0 +1,119 @@
+import numpy as np
+import pandas as pd
+
+
+transactions = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/transactions.csv')
+holiday_events = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/holidays.csv')
+
+## Print the first 5 rows of the DataFrame to check if it was imported correctly
+
+
+items = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/items.csv')
+oil = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/oil.csv')
+stores = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/stores.csv')
+test = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/test.csv')
+
+
+
+train_df = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/train.csv')
+
+train_sample = train_df.sample(frac = 0.05)
+train_sample.head()
+
+##working on holiday_events
+
+
+
+import datetime
+#train_sample['date'] = train_sample['date'].apply(datetime.datetime.strptime, args = ("%Y-%m-%d",))
+#train_sample.sort_values(by = 'date', inplace = True)
+#print (train_sample.head())
+#print (train_sample.shape)
+#print (train_sample.describe())
+#print (train_sample.isnull().sum())
+
+train_sample['onpromotion'].fillna(value = 'missing', inplace = True)
+train_sample['onpromotion'].isnull().sum()
+
+
+##The given dataset has 6,274,852 rows and 6 columns.
+##The 'unit_sales' column represents the number of units sold for a particular item on a specific date and store. 
+##The dataset has no missing values except for the 'onpromotion' column, which has 1,081,263 missing values. 
+##To handle the missing values, the 'onpromotion' column has been filled with the value 'missing'.
+##After that, it was observed that there are 4,803,689 items that were not on promotion, 1,081,263 items for which promotion information is missing, and 389,900 items that were on promotion.
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+##convert the date columne to a data time object 
+#train_df['date'] = pd.to_datatime(train['date'], format = '%Y-%M- %D')
+## loading the data of 2017 only 
+train_df['date'] = pd.to_datetime(train_df['date'], format='%Y-%m-%d')
+train_df = train_df[train_df['date'].dt.year == 2017]
+train_df.head()
+
+##Removed information about returned items
+ind =train_df['unit_sales'] >= 0
+train_df = train_df[ind]
+train_df.reset_index(inplace=True)
+
+## group the data by items and stores
+grouped = train_df.groupby(['item_nbr','store_nbr'])
+grouped = grouped.groups
+groupedkeys = list(grouped.keys())
+
+## generate all the dates from january 01 of 2017
+dates = pd.date_range(train_df['date'].iloc[0], train_df['date'].iloc[-1])
+
+## item sales matrix
+##
+itemSales = np.zeros((len(dates),len(items),len(stores)))
+
+for K in groupedkeys:
+    indItem = np.where(items["item_nbr"]== K[0])## maping the item_nbr in the index of items.csv
+    indstore = K[1]
+    index = grouped[K]
+    ind = dates.searchsorted(np.array(train_df['date'].iloc[index])) 
+
+
+itemSales[ind, indItem, indstore -1 ] = train_df['unit_sales'].iloc[index]## assigning the value    
+
+
+meansales = np.expm1(np.mean(np.log1p(itemSales), axis=0))
+##This line of code calculates the mean sales for each item-store combination over the entire time period covered by the data.
+
+
+grouped_test = test.groupby(['item_nbr','store_nbr'])
+## group data by items and stores
+
+grouped_test = grouped_test.groups
+testkeys = list(grouped_test.keys())
+
+predicted = np.zeros((len(test),1))## starrting with prediction outcome
+
+for K in testkeys:
+    indItem = np.where(items['item_nbr']==K[0])
+    indstore = K[1]
+    index = grouped_test[K]
+    predicted[index,0] = meansales[indItem, indstore -1 ]
+
+## now i am savingthe data
+
+submit = pd.DataFrame(np.random.randn(len(test),2), columns=['id', 'unit_sales'])    
+submit['id'] = test['id']
+submit['unit_sales'] = predicted # undo the log transform
+ 
+submit.to_csv('prediction_01.csv', index = False)
+
+print(submit)
+print(submit.describe())
+
+
+
+
+
+
+
+
+
+
