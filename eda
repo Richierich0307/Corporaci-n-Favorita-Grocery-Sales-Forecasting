@@ -1,0 +1,87 @@
+import numpy as np
+import pandas as pd
+
+
+transactions = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/transactions.csv')
+holiday_events = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/holidays.csv')
+
+# Print the first 5 rows of the DataFrame to check if it was imported correctly
+
+
+items = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/items.csv')
+oil = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/oil.csv')
+stores = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/stores.csv')
+test = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/test.csv')
+
+
+
+train = pd.read_csv('/Users/hammadkhan/Downloads/favorita-grocery-sales-forecasting/train.csv')
+
+train_sample = train.sample(frac = 0.05)
+train_sample.head()
+
+#working on holiday_events
+
+print("working on holiday_events")
+
+print (holiday_events.head())
+print (holiday_events.shape)
+print (holiday_events.describe())
+print (holiday_events.isnull().sum())
+
+
+##The holiday_events data contains information about holidays and events that might affect the sales in Ecuador during the given time period.
+##The data has 350 rows and 6 columns. Each row corresponds to a specific holiday/event and each column provides information about that holiday/event such as its date, type, locale, locale name, description, and whether it was transferred to another day.
+##The most common holiday/event in the data is the "Carnaval" which happened during the National level in Ecuador, and it happened on June 25th in 2014.
+
+print (items.head())
+print (items.shape)
+print (items.describe())
+print (items.isnull().sum())
+
+print (len(items['family'].value_counts().index))
+print (len(items['class'].value_counts().index))
+print (items['perishable'].value_counts())
+
+##From item dataset, we can find:
+##1. There are 4100 items.
+##2. These items can be classfied to 33 families (e.g. GROCERY I)
+##3. There are 337 classes
+##4. 3114 of them are not perishable, 986 of them are perishable
+
+print (oil.head())
+print (oil.shape)
+print (oil.describe())
+print (oil.isnull().sum())
+
+
+##This data represents the daily price of West Texas Intermediate (WTI) crude oil futures from January 2013 to August 2017.
+## There are 1218 data points in this dataset, but 43 of them are missing values. 
+## The mean price during this period was $67.71, with a standard deviation of $25.63, indicating a relatively high amount of variability in the price.
+## The minimum price during this period was $26.19, while the maximum was $110.62.
+
+import datetime
+train_sample['date'] = train_sample['date'].apply(datetime.datetime.strptime, args = ("%Y-%m-%d",))
+train_sample.sort_values(by = 'date', inplace = True)
+print (train_sample.head())
+print (train_sample.shape)
+print (train_sample.describe())
+print (train_sample.isnull().sum())
+
+train_sample['onpromotion'].fillna(value = 'missing', inplace = True)
+train_sample['onpromotion'].isnull().sum()
+print (train_sample['onpromotion'].value_counts())
+
+#The given dataset has 6,274,852 rows and 6 columns.
+#The 'unit_sales' column represents the number of units sold for a particular item on a specific date and store. 
+#The dataset has no missing values except for the 'onpromotion' column, which has 1,081,263 missing values. 
+#To handle the missing values, the 'onpromotion' column has been filled with the value 'missing'.
+#After that, it was observed that there are 4,803,689 items that were not on promotion, 1,081,263 items for which promotion information is missing, and 389,900 items that were on promotion
+
+print (test.head())
+print (test.shape)
+print (test.describe())
+print (test.isnull().sum())
+print (test['onpromotion'].value_counts())
+
+##The test dataset has 3,370,464 records with 5 columns: 'id', 'date', 'store_nbr', 'item_nbr', and 'onpromotion'. The 'onpromotion' column does not have any missing values.
